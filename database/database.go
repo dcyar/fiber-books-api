@@ -1,6 +1,7 @@
 package database
 
 import (
+	"github.com/dcyar/fiber-books-api/config"
 	"github.com/dcyar/fiber-books-api/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -11,7 +12,7 @@ import (
 var DBConn *gorm.DB
 
 func ConnectDb() {
-	dsn := "root:password@tcp(127.0.0.1:3306)/fiber_books?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := config.Config("DB_DSN")
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
