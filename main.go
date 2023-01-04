@@ -5,11 +5,15 @@ import (
 	router "github.com/dcyar/fiber-books-api/routes"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/joho/godotenv"
 	"log"
-	"net/http"
 )
 
 func main() {
+	if err := godotenv.Load(".env"); err != nil {
+		panic("Error loading .env file")
+	}
+
 	database.ConnectDb()
 
 	app := fiber.New()
@@ -21,7 +25,7 @@ func main() {
 
 	// 404 "Not Found"
 	app.Use(func(c *fiber.Ctx) error {
-		return c.SendStatus(http.StatusNotFound)
+		return c.SendStatus(fiber.StatusNotFound)
 	})
 
 	log.Fatal(app.Listen(":3000"))

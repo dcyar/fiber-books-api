@@ -1,16 +1,15 @@
 package models
 
 import (
-	"gorm.io/gorm"
 	"time"
 )
 
 type Book struct {
-	ID        uint           `json:"id"`
-	Title     string         `json:"title"`
-	Author    string         `json:"author"`
-	Year      int            `json:"year" validate:"required,number"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index"json:"deleted_at"`
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	AuthorID  int       `json:"author_id"`
+	Author    Author    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"author"`
+	Title     string    `json:"title"`
+	Year      int       `json:"year" validate:"required,number"`
+	CreatedAt time.Time `json:"-"`
+	UpdatedAt time.Time `json:"-"`
 }

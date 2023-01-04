@@ -1,17 +1,14 @@
 package routes
 
 import (
-	c "github.com/dcyar/fiber-books-api/controllers"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func SetUpApiRoutes(app *fiber.App) {
-	api := app.Group("/api")
+	api := app.Group("/api", logger.New())
 
-	books := api.Group("/books")
-	books.Get("/", c.BookList)
-	books.Post("/", c.BookStore)
-	books.Get("/:id", c.BookFind)
-	books.Put("/:id", c.BookUpdate)
-	books.Delete("/:id", c.BookDelete)
+	authRouter(api)
+	authorsRouter(api)
+	booksRouter(api)
 }

@@ -1,75 +1,129 @@
 package controllers
 
 import (
+	"errors"
 	"github.com/dcyar/fiber-books-api/database"
 	"github.com/dcyar/fiber-books-api/models"
 	"github.com/gofiber/fiber/v2"
-	"net/http"
 	"strconv"
 )
 
 func BookList(c *fiber.Ctx) error {
 	books := []models.Book{}
 
-	database.DBConn.Find(&books)
+	if err := database.DBConn.Find(&books).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
 
-	return c.Status(http.StatusOK).JSON(struct {
-		Message string        `json:"message"`
-		Data    []models.Book `json:"data"`
-	}{
-		Message: "Books list",
-		Data:    books,
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Books list",
+		"data":    books,
 	})
 }
 
 func BookFind(c *fiber.Ctx) error {
-	book := models.Book{}
+	book, err := findBookById(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
 
-	database.DBConn.First(&book, c.Params("id"))
-
-	return c.Status(http.StatusOK).JSON(book)
+	return c.Status(fiber.StatusOK).JSON(book)
 }
 
 func BookStore(c *fiber.Ctx) error {
 	book := new(models.Book)
 
 	if err := c.BodyParser(book); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
-	database.DBConn.Create(&book)
+	author, err := findAuthorById(strconv.Itoa(book.AuthorID))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
 
-	return c.Status(http.StatusCreated).JSON(struct {
-		Message string       `json:"message"`
-		Data    *models.Book `json:"data"`
-	}{
-		Message: "Book was created.",
-		Data:    book,
+	book.Author = author
+
+	if err := database.DBConn.Create(&book).Error; err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "Book was created.",
+		"data":    book,
 	})
 }
 
 func BookUpdate(c *fiber.Ctx) error {
-	book := new(models.Book)
+	bookForm := new(models.Book)
 
-	if err := c.BodyParser(book); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(err.Error())
+	if err := c.BodyParser(bookForm); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
-	id, _ := strconv.Atoi(c.Params("id"))
+	book, err := findBookById(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
 
-	database.DBConn.Model(&models.Book{}).Where("id = ?", id).Updates(models.Book{Title: book.Title, Author: book.Author, Year: book.Year})
+	author, err := findAuthorById(strconv.Itoa(book.AuthorID))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
 
-	return c.Status(http.StatusOK).JSON(struct {
-		Message string `json:"message"`
-	}{Message: "Updated"})
+	bookForm.Author = author
+
+	if err := database.DBConn.Model(&book).Where("id = ?", book.ID).Updates(bookForm).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Book updated",
+		"data":    book,
+	})
 }
 
 func BookDelete(c *fiber.Ctx) error {
-	book := new(models.Book)
+	book, err := findBookById(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
 
-	id, _ := strconv.Atoi(c.Params("id"))
+	if err := database.DBConn.Where("id = ?", book.ID).Delete(&book).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
 
-	database.DBConn.Where("id = ?", id).Delete(&book)
+	return c.SendStatus(fiber.StatusNoContent)
+}
 
-	return c.SendStatus(http.StatusNoContent)
+func findBookById(paramId string) (models.Book, error) {
+	book := models.Book{}
+	id, err := strconv.Atoi(paramId)
+	if err != nil {
+		return book, errors.New("Book id are invalid")
+	}
+
+	if err := database.DBConn.Preload("Author").First(&book, id).Error; err != nil {
+		return book, errors.New(err.Error())
+	}
+
+	return book, nil
 }
