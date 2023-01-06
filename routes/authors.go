@@ -10,7 +10,7 @@ func authorsRouter(api fiber.Router) {
 	authors := api.Group("/authors")
 	authors.Get("/", c.AuthorList)
 	authors.Post("/", middleware.Protected(), c.AuthorStore)
-	authors.Get("/:id", middleware.Protected(), c.AuthorFind)
+	authors.Get("/:id", c.AuthorFind)
 	authors.Put("/:id", middleware.Protected(), c.AuthorUpdate)
 	authors.Delete("/:id", middleware.Protected(), c.AuthorDelete)
 }

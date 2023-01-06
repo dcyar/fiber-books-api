@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/dcyar/fiber-books-api/config"
 	"github.com/dcyar/fiber-books-api/database"
 	router "github.com/dcyar/fiber-books-api/routes"
 	"github.com/gofiber/fiber/v2"
@@ -28,5 +29,5 @@ func main() {
 		return c.SendStatus(fiber.StatusNotFound)
 	})
 
-	log.Fatal(app.Listen(":3000"))
+	log.Fatal(app.Listen(config.Config("PORT")))
 }
