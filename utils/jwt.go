@@ -4,21 +4,8 @@ import (
 	"errors"
 	"github.com/dcyar/fiber-books-api/config"
 	"github.com/golang-jwt/jwt/v4"
-	"golang.org/x/crypto/bcrypt"
 	"time"
 )
-
-func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-
-	return string(bytes), err
-}
-
-func CheckPasswordHash(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-
-	return err == nil
-}
 
 func GenerateJwtToken(email string) (string, error) {
 	tokenHash := jwt.New(jwt.SigningMethodHS256)

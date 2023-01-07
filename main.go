@@ -19,6 +19,8 @@ func main() {
 
 	app := fiber.New()
 
+	app.Static("/uploads", "./uploads")
+
 	router.SetUpRoutes(app)
 	router.SetUpApiRoutes(app)
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/dcyar/fiber-books-api/database"
 	"github.com/dcyar/fiber-books-api/models"
+	"github.com/dcyar/fiber-books-api/utils"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
 )
@@ -50,6 +51,15 @@ func BookStore(c *fiber.Ctx) error {
 
 	book.Author = author
 
+	uploadedFile, err := utils.UploadFile(c, "covers", "cover", "jpg,png")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	book.Cover = uploadedFile["path"]
+
 	if err := database.DBConn.Create(&book).Error; err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": err.Error(),
@@ -83,7 +93,26 @@ func BookUpdate(c *fiber.Ctx) error {
 		})
 	}
 
+	if _, err := c.FormFile("cover"); err == nil {
+		uploadedFile, err := utils.UploadFile(c, "covers", "cover", "jpg,png")
+
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": err.Error(),
+			})
+		}
+
+		if err := utils.RemoveFile(book.Cover); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"message": err.Error(),
+			})
+		}
+
+		book.Cover = uploadedFile["path"]
+	}
+
 	bookForm.Author = author
+	bookForm.Cover = book.Cover
 
 	if err := database.DBConn.Model(&book).Where("id = ?", book.ID).Updates(bookForm).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -101,6 +130,12 @@ func BookDelete(c *fiber.Ctx) error {
 	book, err := findBookById(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	if err := utils.RemoveFile(book.Cover); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
 	}
